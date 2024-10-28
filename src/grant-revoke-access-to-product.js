@@ -3,7 +3,7 @@ const AWS = require("aws-sdk");
 const SNS = new AWS.SNS({ apiVersion: "2010-03-31" });
 const {
   SupportSNSArn: TopicArn,
-  TenantAdminRoleName: tenantAdminRoleName,
+  AccessManagementRoleName: accessManagementRoleName,
   SaasAccountId: saasAccountId,
   CognitoUserPoolId: cognitoUserPoolId
 } = process.env;
@@ -77,10 +77,10 @@ exports.dynamodbStreamHandler = async (event, context) => {
       const sts = new AWS.STS();
 
       if (grantAccess || revokeAccess || reinstateAccess || entitlementUpdated) {
-        const tenantAdminRoleArn = `arn:aws:iam::${saasAccountId}:role/${tenantAdminRoleName}`;
-        logger.debug("Assuming Tenant Admin role in AWS account where CTX deployed", { data: tenantAdminRoleArn })
+        const accessManagementRoleArn = `arn:aws:iam::${saasAccountId}:role/${accessManagementRoleName}`;
+        logger.debug("Assuming Access Management role in AWS account where CTX deployed", { data: accessManagementRoleArn })
         const assumeRoleParams = {
-          RoleArn: tenantAdminRoleArn,
+          RoleArn: accessManagementRoleArn,
           RoleSessionName: "SaaS-MPI-Grant-Revoke-Access",
           DurationSeconds: 900,
         };

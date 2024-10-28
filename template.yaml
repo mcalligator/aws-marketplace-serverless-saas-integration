@@ -73,7 +73,7 @@ Parameters:
     Description: "Enter the AWS account id where City Trax software is deployed"
     Type: String
 
-  TenantAdminRoleName:
+  AccessManagementRoleName:
     Type: String
     Description: "The name of the role that Tenant Administrators assume in the City Trax software account"
     # AllowedPattern: '[\w+=,.@-]+'
@@ -378,7 +378,7 @@ Resources:
           LOG_LEVEL: "info"
           SaasAccountId: !Ref SaasAccountId
           CognitoUserPoolId: !Ref CognitoUserPoolId
-          TenantAdminRoleName: !Ref TenantAdminRoleName
+          AccessManagementRoleName: !Ref AccessManagementRoleName
       Policies:
         # - AssumeTenantAdminsRole:
         - Statement:
@@ -391,7 +391,7 @@ Resources:
                 - - "arn:aws:iam::"
                   - !Ref SaasAccountId
                   - ":role/"
-                  - !Ref TenantAdminRoleName
+                  - !Ref AccessManagementRoleName
         - Statement:
             - Sid: SNSPublish
               Effect: Allow
