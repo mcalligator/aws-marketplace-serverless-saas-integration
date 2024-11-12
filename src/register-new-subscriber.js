@@ -42,16 +42,19 @@ const setBuyerNotificationHandler = function (contactEmail) {
       <body>
         <h1>Welcome!</h1>
         <p>Thank you for purchasing City Trax Translate.</p>
-        <p>We\u2019re thrilled to have you on board.  Your account credentials are being set up.  You will shortly receive one email confirming your subscription, and a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website.</p>
+        <p>We\u2019re thrilled to have you on board.  Your account credentials are being set up.  You will shortly receive one email confirming your subscription, and a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website .</p>
         <p>Kind regards,</p>
         <p>City Trax Sales</p>
+        <p>www.citytrax.co.uk</p>
       </body>
     </html>`;
   const textContent = `Welcome! Thank you for purchasing City Trax Translate. We’re thrilled to have you on board.  Your account credentials are being set up.  You will shortly receive one email confirming your subscription, and a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website.
   
   Kind regards,
   
-  City Trax Sales`;
+  City Trax Sales
+  
+  www.citytrax.co.uk`;
 
   const subjectContent = "Welcome to City Trax Translate";
 
@@ -152,7 +155,7 @@ exports.registerNewSubscriber = async (event, context) => {
 
       return lambdaResponse(
         200,
-        "Success! Registration completed: you have purchased access to City Trax Translate.  Your account credentials are being set up.  You will shortly receive a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website."
+        "Success! Registration completed: you have purchased access to City Trax Translate.  Your account credentials are being set up.  You will shortly receive a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website (www.citytrax.co.uk)."
       );
     } catch (error) {
       console.error(`\n\nError attempting to register new subscriber:\n${error}\n`);
