@@ -313,6 +313,12 @@ Resources:
             Method: post
             RestApiId: !Ref ServerlessApi
 
+  RegisterNewMarketplaceCustomerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RegisterNewMarketplaceCustomer}"
+      RetentionInDays: 30
+
   EntitlementSQSQueue:
     Type: AWS::SQS::Queue
     Condition: CreateEntitlementLogic
@@ -350,6 +356,13 @@ Resources:
               QueueArn: !GetAtt EntitlementSQSQueue.Arn
               QueueUrl: !Ref EntitlementSQSQueue
 
+  EntitlementSQSHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreateEntitlementLogic
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${EntitlementSQSHandler}"
+      RetentionInDays: 30
+
   SubscriptionSQSHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -378,6 +391,12 @@ Resources:
             Topic:  !Sub 'arn:aws:sns:${SNSRegion}:${SNSAccountID}:aws-mp-subscription-notification-${GetProductCode.ProductCode}'
             Region: !Sub '${SNSRegion}'
             SqsSubscription: true
+
+  SubscriptionSQSHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SubscriptionSQSHandler}"
+      RetentionInDays: 30
 
   SupportSNSTopic:
     Type: AWS::SNS::Topic
@@ -428,6 +447,12 @@ Resources:
         MaximumEventAgeInSeconds: 3600
         MaximumRetryAttempts: 1
 
+  GrantOrRevokeAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GrantOrRevokeAccess}"
+      RetentionInDays: 30
+
   Hourly:
     Type: AWS::Serverless::Function
     Condition: CreateSubscriptionLogic
@@ -465,6 +490,13 @@ Resources:
                         - !Ref AWS::StackId
             Description: SaaS Metering
             Enabled: true
+
+  HourlyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreateSubscriptionLogic
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${Hourly}"
+      RetentionInDays: 30
 
   SQSMeteringRecords:
     Type: AWS::SQS::Queue
@@ -518,6 +550,13 @@ Resources:
           Bucket: !GetAtt WebsiteS3BucketLog.DomainName
           IncludeCookies: false
           Prefix: "access-logs"
+
+  MeteringSQSHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreateSubscriptionLogic
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${MeteringSQSHandler}"
+      RetentionInDays: 30
 
   WebsiteS3Bucket:
     Type: AWS::S3::Bucket
@@ -586,6 +625,13 @@ Resources:
             Path: /redirectmarketplacetoken
             Method: post
             RestApiId: !Ref ServerlessApi
+
+  LambdaRedirectPostRequestsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreateWeb
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaRedirectPostRequests}"
+      RetentionInDays: 30
 
   CloudFrontOriginAccessControl:
     Type: "AWS::CloudFront::OriginAccessControl"
@@ -917,12 +963,44 @@ Resources:
       IsBase64Encoded: true
       Body: AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArmYf/51RE/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACuZh//rmYf/65mH/+dURP/nVET/51RE/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACuZh//rmYf/65mH/+uZh//nVET/51RE/+dURP/nVET/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArmYf/65mH/+uZh//rmYf/51RE/+dURP/nVET/51RE/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK5mH/+uZh//rmYf/65nH/+eUhP/nVET/51RE/+dURP/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACuZh//rmYf/7p9F/+6fRf/un0X/7p9F/+dUhP/nVET/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALp9F/+6fRf/un0X/7p9F/+6fRf/un0X/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIXvu/yRf4/oAAAAAAAAAALp9F/+6fRf/AAAAAAAAAADJowD1uI0D/wAAAAAAAAAAAAAAABVQmwghe+7/IXvu/yF77v8kX+P/JF/j/yRf4/8AAAAAAAAAAMmjAP/JowD/yaMA/7iNA/+4jQP/uI0D/3hcAgghe+7/IXvu/yF77v8he+7/JF/j/yRf4/8kX+P/G0eqnJd6AJzJowD/yaMA/8mjAP+4jQP/uI0D/7iNA/+4jQP/IXvu/yF77v8he+7/IXvu/yRf4/8kX+P/JF/j/xtHqpyXegCcyaMA/8mjAP/JowD/uI0D/7iNA/+4jQP/uI0D/yF77v8he+7/IXvu/yWE8f8kX+P/JF/j/yRf4/8bR6qcl3oAnMmjAP/JowD/yaMA/8SeE/+4jQP/uI0D/7iNA/8he+7/LJX3/yyW9/8slvf/LJb3/yyW9/8kX+P/G0eqnJd6AJzJowD/2sE0/9rBNP/awTT/2sE0/9i+Mf+4jQP/AAAAACyW9/8slvf/LJb3/yyW9/8slvf/LJb3/wAAAAAAAAAA2sE0/9rBNP/awTT/2sE0/9rBNP/awTT/AAAAAAAAAAAAAAAAAAAAACyW9/8slvf5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2sE0/trBNP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/n8AAPgfAADwDwAA8A8AAPAPAADwDwAA+B8AAOZnAACBgQAAAAAAAAAAAAAAAAAAAAAAAIGBAADn5wAA//8AAA==
 
+  # Log group for custom Lambda function
+  S3ContentCustomResourceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CreateWeb
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub
+        - "/aws/lambda/S3ContentCustomResource-${id}"
+        - id: !Select 
+            - 0
+            - !Split 
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref AWS::StackId
+
   # Custom Lambda function that creates an object in specified S3 bucket and prefix
   S3ContentCustomResource:
     Type: AWS::Lambda::Function
     Condition: CreateWeb
     DependsOn: S3ContentCustomResourceLogGroup
     Properties:
+      FunctionName: !Sub
+        - "S3ContentCustomResource-${id}"
+        - id: !Select 
+            - 0
+            - !Split 
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref AWS::StackId
+      Handler: index.handler
+      Role: !GetAtt S3ContentCustomResourceRole.Arn
+      Runtime: nodejs20.x
       Code: 
         ZipFile: |
           const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
@@ -1018,20 +1096,7 @@ Resources:
             });
             return response;
           };
-      FunctionName: !Sub
-        - "S3ContentCustomResource-${id}"
-        - id: !Select 
-            - 0
-            - !Split 
-              - "-"
-              - !Select
-                - 2
-                - !Split
-                  - "/"
-                  - !Ref AWS::StackId
-      Handler: index.handler
-      Role: !GetAtt S3ContentCustomResourceRole.Arn
-      Runtime: nodejs20.x
+
   # Role for custom Lambda function to log activity and put/delete objects in S3 bucket created in this template
   S3ContentCustomResourceRole:
     Type: AWS::IAM::Role
@@ -1072,12 +1137,13 @@ Resources:
                   - "s3:PutObject"
                   - "s3:DeleteObject"
                 Resource: !Sub "${WebsiteS3Bucket.Arn}/*"
-  # Log group for Lambda function
-  S3ContentCustomResourceLogGroup:
+
+  GetProductCodeCustomResourceLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
+      RetentionInDays: 30
       LogGroupName: !Sub
-        - "/aws/lambda/S3ContentCustomResource-${id}"
+        - "/aws/lambda/GetProductCodeCustomResource-${id}"
         - id: !Select 
             - 0
             - !Split 
@@ -1087,8 +1153,7 @@ Resources:
                 - !Split
                   - "/"
                   - !Ref AWS::StackId
-      RetentionInDays: 7
-  
+
   GetProductCode:
     Type: Custom::Lambda
     Properties:
@@ -1097,6 +1162,7 @@ Resources:
       
   GetProductCodeCustomResource:
     Type: AWS::Lambda::Function
+    DependsOn: GetProductCodeCustomResourceLogGroup
     Properties:
       Role: !GetAtt CAPILambdasExecutionRole.Arn
       Runtime: nodejs18.x
@@ -1219,6 +1285,22 @@ Resources:
       #   }
       # ]
 
+  UpdateFulfillmentURLCustomResourceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub
+        - "/aws/lambda/UpdateFulfillmentURLCustomResource-${id}"
+        - id: !Select 
+            - 0
+            - !Split 
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref AWS::StackId      
+
   FulfillmentURL:
     Type: Custom::Lambda
     Condition: UpdateFulfillment
@@ -1237,6 +1319,7 @@ Resources:
 
   UpdateFulfillmentURLCustomResource:
     Type: AWS::Lambda::Function
+    DependsOn: UpdateFulfillmentURLCustomResourceLogGroup
     Properties:
       Role: !GetAtt CAPILambdasExecutionRole.Arn
       Runtime: nodejs18.x
@@ -1247,7 +1330,7 @@ Resources:
           const response = require('cfn-response');
           exports.handler = async (event, context) => {
             console.debug("REQUEST RECEIVED:\n" + JSON.stringify(event));
-            console.debug("REQUEST CONTEXT:\n") + JSON.stringify(context);
+            console.debug("REQUEST CONTEXT:\n" + JSON.stringify(context));
             const client = new MarketplaceCatalogClient({ region: 'us-east-1' });
             const productId = event.ResourceProperties.ProductId;
             const fulfillmentUrl = event.ResourceProperties.FulfillmentUrl;
@@ -1312,7 +1395,7 @@ Resources:
                 await response.send(event, context, 'FAILED', { error: 'Failed to update fulfillment url' });
             }
           };
-          
+
 Outputs:
 
   CrossAccountRole:
