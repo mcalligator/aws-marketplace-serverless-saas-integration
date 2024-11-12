@@ -122,6 +122,10 @@ Parameters:
     Description: The domain for the registration URL (e.g. register.example.com)
     Default: ""
 
+  FulfilmentDomainCertificateArn:
+    Type: String
+    Description: The ARN of the certificate in the us-east-1 region for the FulfilmentDomain
+
 Conditions:
   CreateEntitlementLogic:
     Fn::Or:
@@ -640,7 +644,13 @@ Resources:
         Enabled: true
         HttpVersion: http2
         PriceClass: PriceClass_200
-        # List of origins that Cloudfront will connect to
+        Aliases:
+          - !Sub "register.${FulfilmentDomain}"
+        ViewerCertificate:
+          AcmCertificateArn: !Ref FulfilmentDomainCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+# List of origins that Cloudfront will connect to
         Origins:
           - Id: s3-website
             DomainName: !GetAtt WebsiteS3Bucket.RegionalDomainName
@@ -1065,7 +1075,6 @@ Resources:
   # Log group for Lambda function
   S3ContentCustomResourceLogGroup:
     Type: AWS::Logs::LogGroup
-    Condition: CreateWeb
     Properties:
       LogGroupName: !Sub
         - "/aws/lambda/S3ContentCustomResource-${id}"
@@ -1190,7 +1199,6 @@ Resources:
     Properties:
       HostedZoneName: !Sub "${FulfilmentDomain}."
       Name: !Sub "register.${FulfilmentDomain}"
-      TTL: "900"
       Type: A
       AliasTarget:
         DNSName: !GetAtt CloudfrontDistribution.DomainName
@@ -1221,7 +1229,7 @@ Resources:
         CreateWeb,
         !If [
           CreateDNSAndWeb,
-          !Sub "https://${FulfilmentDomain}/redirectmarketplacetoken",
+          !Sub "https://register.${FulfilmentDomain}/redirectmarketplacetoken",
           !Sub "https://${CloudfrontDistribution.DomainName}/redirectmarketplacetoken"
         ],
         !Sub "https://${ServerlessApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/redirectmarketplacetoken"
@@ -1253,7 +1261,6 @@ Resources:
                     });
                     let resp = await client.send(command);
                     console.debug("DescribeEntityCommand:\n" + JSON.stringify(resp));
-                    
                     
                     const fulfillmentUrlID = resp.DetailsDocument.Versions[0].DeliveryOptions[0].Id
                     console.debug("FullfilmentId:\n" + fulfillmentUrlID);
