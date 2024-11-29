@@ -1,10 +1,19 @@
+const winston = require("winston");
 const AWS = require('aws-sdk');
 const { NewSubscribersTableName: newSubscribersTableName, AWS_REGION: aws_region } = process.env;
-// MarketplaceEntitlementService is instantianise only in the us-east-1 https://docs.aws.amazon.com/general/latest/gr/aws-marketplace.html#marketplaceentitlement
+// MarketplaceEntitlementService is available only in us-east-1 https://docs.aws.amazon.com/general/latest/gr/aws-marketplace.html#marketplaceentitlement
 const marketplaceEntitlementService = new AWS.MarketplaceEntitlementService({ apiVersion: '2017-01-11', region: 'us-east-1' });
 const dynamodb = new AWS.DynamoDB({ apiVersion: '2012-08-10', region: aws_region });
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || "info",
+  format: winston.format.json(),
+  transports: [new winston.transports.Console()],
+});
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
+  logger.debug("event", { data: event });
+  logger.debug("context", { data: context });
+  
   await Promise.all(event.Records.map(async (record) => {
     const { body } = record;
     let { Message: message } = JSON.parse(body);
@@ -23,10 +32,12 @@ exports.handler = async (event) => {
 
       const entitlementsResponse = await marketplaceEntitlementService.getEntitlements(entitlementParams).promise();
 
-      console.log('entitlementsResponse', entitlementsResponse);
+      logger.debug("Updated customer entitlement", { data: entitlementsResponse });
 
       const isExpired = entitlementsResponse.hasOwnProperty("Entitlements") === false || entitlementsResponse.Entitlements.length === 0 || 
         new Date(entitlementsResponse.Entitlements[0].ExpirationDate) < new Date();
+
+      isExpired && logger.debug("Customer subscription expired", { data: entitlementsResponse });
 
       const dynamoDbParams = {
         TableName: newSubscribersTableName,

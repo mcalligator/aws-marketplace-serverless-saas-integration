@@ -1,0 +1,14 @@
+{
+    "RequestType": "Create",
+    "ServiceToken": "arn:aws:lambda:eu-west-2:534936370474:function:saas-mpi-vanilla-UpdateFulfillmentURLCustomResourc-hoiUYCYCKPYZ",
+    "ResponseURL": "https://cloudformation-custom-resource-response-euwest2.s3.eu-west-2.amazonaws.com/arn%3Aaws%3Acloudformation%3Aeu-west-2%3A534936370474%3Astack/saas-mpi-vanilla/009c9170-9229-11ef-a4e0-025f6224f87f%7CFulfillmentURL%7C5df5ba96-abc9-4471-a8b5-00d5951a18c8?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20241024T170507Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Credential=AKIAZYWU4JB3TPDQ4BXH%2F20241024%2Feu-west-2%2Fs3%2Faws4_request&X-Amz-Signature=2deb86c39cf4c4b70843fe0dfb82e739c9eda5e117676cc1a889abd45eccfa8f",
+    "StackId": "arn:aws:cloudformation:eu-west-2:534936370474:stack/saas-mpi-vanilla/009c9170-9229-11ef-a4e0-025f6224f87f",
+    "RequestId": "5df5ba96-abc9-4471-a8b5-00d5951a18c8",
+    "LogicalResourceId": "FulfillmentURL",
+    "ResourceType": "Custom::Lambda",
+    "ResourceProperties": {
+        "ServiceToken": "arn:aws:lambda:eu-west-2:534936370474:function:saas-mpi-vanilla-UpdateFulfillmentURLCustomResourc-hoiUYCYCKPYZ",
+        "ProductId": "prod-ab5ihozg5ylly",
+        "FulfillmentUrl": "https://d3u8tbmqwc8is3.cloudfront.net/redirectmarketplacetoken"
+    }
+}

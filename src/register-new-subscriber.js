@@ -1,24 +1,63 @@
-const AWS = require('aws-sdk');
-const { NewSubscribersTableName: newSubscribersTableName, EntitlementQueueUrl: entitlementQueueUrl, MarketplaceSellerEmail: marketplaceSellerEmail, AWS_REGION:aws_region } = process.env;
-const ses = new AWS.SES({ region: aws_region});
-const marketplacemetering = new AWS.MarketplaceMetering({ apiVersion: '2016-01-14', region: aws_region });
-const dynamodb = new AWS.DynamoDB({ apiVersion: '2012-08-10', region: aws_region });
-const sqs = new AWS.SQS({ apiVersion: '2012-11-05', region: aws_region });
+const winston = require("winston");
+const AWS = require("aws-sdk");
+const {
+  NewSubscribersTableName: newSubscribersTableName,
+  EntitlementQueueUrl: entitlementQueueUrl,
+  MarketplaceSellerEmail: marketplaceSellerEmail,
+  AWS_REGION: aws_region,
+} = process.env;
+const ses = new AWS.SES({ region: aws_region });
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || "info",
+  format: winston.format.json(),
+  transports: [new winston.transports.Console()],
+});
+const marketplacemetering = new AWS.MarketplaceMetering({
+  apiVersion: "2016-01-14",
+  region: aws_region,
+});
+const dynamodb = new AWS.DynamoDB({ apiVersion: "2012-08-10", region: aws_region });
+const sqs = new AWS.SQS({ apiVersion: "2012-11-05", region: aws_region });
 
 const lambdaResponse = (statusCode, body) => ({
   statusCode,
   headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'OPTIONS,POST',
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "OPTIONS,POST",
   },
 
   body: JSON.stringify(body),
 });
 
 const setBuyerNotificationHandler = function (contactEmail) {
-  if (typeof marketplaceSellerEmail == 'undefined') {
+  if (typeof marketplaceSellerEmail == "undefined") {
+    logger.info("Marketplace configuration error", {data: "No Marketplace Seller Email defined"});
     return;
   }
+  const htmlContent = `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Welcome!</title>
+      </head>
+      <body>
+        <h1>Welcome!</h1>
+        <p>Thank you for purchasing City Trax Translate.</p>
+        <p>We\u2019re thrilled to have you on board.  Your account credentials are being set up.  You will shortly receive one email confirming your subscription, and a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website .</p>
+        <p>Kind regards,</p>
+        <p>City Trax Sales</p>
+        <p>www.citytrax.co.uk</p>
+      </body>
+    </html>`;
+  const textContent = `Welcome! Thank you for purchasing City Trax Translate. We’re thrilled to have you on board.  Your account credentials are being set up.  You will shortly receive one email confirming your subscription, and a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website.
+  
+  Kind regards,
+  
+  City Trax Sales
+  
+  www.citytrax.co.uk`;
+
+  const subjectContent = "Welcome to City Trax Translate";
+
   let params = {
     Destination: {
       ToAddresses: [contactEmail],
@@ -27,37 +66,43 @@ const setBuyerNotificationHandler = function (contactEmail) {
       Body: {
         Html: {
           Charset: "UTF-8",
-          Data: "<!DOCTYPE html><html><head><title>Welcome!<\/title><\/head><body><h1>Welcome!<\/h1><p>Thanks for purchasing<\/p><p>We\u2019re thrilled to have you on board. Our team is hard at work setting up your account, please expect to hear from a member of our customer success team soon<\/p><\/body><\/html>"
+          Data: htmlContent,
         },
         Text: {
           Charset: "UTF-8",
-          Data: "Welcome! Thanks for purchasing. We’re thrilled to have you on board. Our team is hard at work setting up your account, please expect to hear from a member of our customer success team soon"
-        }
+          Data: textContent
+        },
       },
-
       Subject: {
-        Charset: 'UTF-8',
-        Data: "Welcome Email"
-      }
+        Charset: "UTF-8",
+        Data: subjectContent,
+      },
     },
     Source: marketplaceSellerEmail,
   };
 
-  return ses.sendEmail(params).promise()
-
-
+  return ses.sendEmail(params).promise();
 };
 
-exports.registerNewSubscriber = async (event) => {
+exports.registerNewSubscriber = async (event, context) => {
+  logger.debug("event", { data: event });
+  logger.debug("context", { data: context });
+
   const {
     // Accept form inputs from ../web/index.html
-    regToken, companyName, contactPerson, contactPhone, contactEmail,
+    regToken,
+    organisationName,
+    contactPersonFirstName,
+    contactPersonLastName,
+    contactPhone,
+    contactEmail,
   } = JSON.parse(event.body);
 
   // Validate the request with form inputs from ../web/index.html
-  if (regToken && companyName && contactPerson && contactPhone && contactEmail) {
+  if (regToken && organisationName && contactPersonFirstName && contactPersonLastName && contactPhone && contactEmail) {
     try {
       // Call resolveCustomer to validate the subscriber
+      logger.debug("Resolving customer");
       const resolveCustomerParams = {
         RegistrationToken: regToken,
       };
@@ -68,6 +113,7 @@ exports.registerNewSubscriber = async (event) => {
 
       // Store new subscriber data in dynamoDb
       const { CustomerIdentifier, ProductCode, CustomerAWSAccountId } = resolveCustomerResponse;
+      logger.debug("Details of new customer", { data: resolveCustomerResponse });
 
       const datetime = new Date().getTime().toString();
 
@@ -75,17 +121,18 @@ exports.registerNewSubscriber = async (event) => {
       const dynamoDbParams = {
         TableName: newSubscribersTableName,
         Item: {
-          companyName: { S: companyName },
-          contactPerson: { S: contactPerson },
+          organisationName: { S: organisationName },
+          firstName: { S: contactPersonFirstName },
+          lastName: { S: contactPersonLastName },
           contactPhone: { S: contactPhone },
           contactEmail: { S: contactEmail },
           customerIdentifier: { S: CustomerIdentifier },
           productCode: { S: ProductCode },
-          customerAWSAccountID: { S: CustomerAWSAccountId },          
+          customerAWSAccountID: { S: CustomerAWSAccountId },
           created: { S: datetime },
         },
       };
-
+      logger.debug("Being written to DDB", { data: dynamoDbParams });
       await dynamodb.putItem(dynamoDbParams).promise();
 
       // Only for SaaS Contracts, check entitlement
@@ -106,14 +153,18 @@ exports.registerNewSubscriber = async (event) => {
 
       await setBuyerNotificationHandler(contactEmail);
 
-
-
-      return lambdaResponse(200, 'Success! Registration completed. You have purchased an enterprise product that requires some additional setup. A representative from our team will be contacting you within two business days with your account credentials. Please contact Support through our website if you have any questions.');
+      return lambdaResponse(
+        200,
+        "Success! Registration completed: you have purchased access to City Trax Translate.  Your account credentials are being set up.  You will shortly receive a separate email with your initial login password to access it on https://ctxtranslate.cloud.  If this has not arrived within 24 hours, please check your email spam folder, and if you still have not received it, contact Support through our website (www.citytrax.co.uk)."
+      );
     } catch (error) {
-      console.error(error);
-      return lambdaResponse(400, 'Registration data not valid. Please try again, or contact support!');
+      console.error(`\n\nError attempting to register new subscriber:\n${error}\n`);
+      return lambdaResponse(
+        400,
+        `Registration not succesful - ${error}.  Please try again, or contact City Trax Support.`
+      );
     }
   } else {
-    return lambdaResponse(400, 'Request no valid');
+    return lambdaResponse(400, "Request not valid");
   }
 };
